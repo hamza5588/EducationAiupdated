@@ -13,6 +13,48 @@ def index():
     """Render the main chat interface"""
     return render_template('chat.html')
 
+# Add these routes to chat.py
+
+from app.services import PromptService
+
+@bp.route('/get_prompt')
+def get_prompt():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+        
+    try:
+        prompt_service = PromptService(session['user_id'])
+        current_prompt = prompt_service.get_prompt()
+        return jsonify({'prompt': current_prompt})
+    except Exception as e:
+        logger.error(f"Error retrieving prompt: {str(e)}")
+        return jsonify({'error': 'Failed to retrieve prompt'}), 500
+
+@bp.route('/update_prompt', methods=['POST'])
+def update_prompt():
+    if 'user_id' not in session:
+        return jsonify({'error': 'Not authenticated'}), 401
+        
+    try:
+        data = request.json
+        new_prompt = data.get('prompt')
+   
+        
+        if not new_prompt:
+            return jsonify({'error': 'Prompt is required'}), 400
+            
+        prompt_service = PromptService(session['user_id'])
+        prompt_service.update_prompt(new_prompt)
+        
+        return jsonify({
+            'success': True,
+            'message': 'Prompt updated successfully'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating prompt: {str(e)}")
+        return jsonify({'error': 'Failed to update prompt'}), 500
+
 @bp.route('/chat', methods=['POST'])
 @login_required
 def chat():
