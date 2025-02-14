@@ -1,0 +1,7 @@
+Flask==2.0.1
+langchain==0.1.0
+langchain-groq==0.1.0
+langchain-nomic==0.1.0
+python-dotenv==0.19.0
+Werkzeug==2.0.1
+SQLite3==2.6.0
