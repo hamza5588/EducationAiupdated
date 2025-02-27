@@ -5,10 +5,10 @@ import os
 from app.utils.db import init_db
 
 def create_app():
-    # Create Flask app with correct template folder
+    # Create Flask app with template folder in project root
     app = Flask(__name__, 
-                template_folder=os.path.abspath('templates'),
-                static_folder=os.path.abspath('app/static'))
+                template_folder=os.path.join(os.path.dirname(os.path.dirname(__file__)), 'templates'),
+                static_folder=os.path.join(os.path.dirname(__file__), 'static'))
     
     # Basic configuration
     app.secret_key = 'your_secret_key'  # Change this in production

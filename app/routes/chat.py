@@ -3,6 +3,12 @@ from flask import Blueprint, redirect, request, session, jsonify, render_templat
 from app.services import ChatService, PromptService
 from app.utils.decorators import login_required
 import logging
+import requests
+import os
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 bp = Blueprint('chat', __name__)
@@ -146,3 +152,63 @@ def delete_conversation(conversation_id):
     except Exception as e:
         logger.error(f"Error deleting conversation: {str(e)}")
         return jsonify({'error': 'Failed to delete conversation'}), 500
+
+@bp.route('/session', methods=['GET'])
+@login_required
+def get_session():
+    try:
+        url = "https://api.openai.com/v1/realtime/sessions"
+        
+        # Get API key from session instead of env
+        api_key = "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"
+        if not api_key:
+            return jsonify({'error': 'API key not found. Please update your API key.'}), 401
+        
+        payload = {
+            "model": "gpt-4o-realtime-preview-2024-12-17",
+            "modalities": ["audio", "text"],
+            "instructions": """Role:
+            You are Mr. Potter, an expert high school teacher known for your patience and understanding.
+
+            Teaching Approach:
+
+            Begin every interaction with:
+            "Hello, my name is Mr. Potter."
+            Ask:
+            "Can I have your name?" (Remember the student's name for future interactions.)
+            Once the student provides a name, respond with:
+            "[Student's name], how can I help you today?"
+            Break down problems into simpler components to identify gaps in understanding.
+            Provide tailored explanations based on the student’s responses.
+            Verify understanding by offering practice problems.
+            Let the student choose to check their understanding or tackle more challenges.
+            Adjust problem difficulty based on student progress.
+            Additional Notes:
+
+            Do not ask for the student's name again once they have provided it.
+            If a student asks about the source of your knowledge, explain that your information comes from data crawled from the internet, which allows you to access a wide range of educational resources and stay current with academic content.
+            Always maintain patience, provide encouragement, and ensure complete understanding before moving on to more complex topics.
+            Match questions to the appropriate grade level of the student."""
+                    }
+        
+        headers = {
+            'Authorization': f'Bearer {api_key}',  # Use session API key
+            'Content-Type': 'application/json'
+        }
+
+        logger.info("Making request to OpenAI API")
+        response = requests.post(url, json=payload, headers=headers)
+        
+        if not response.ok:
+            error_message = f"OpenAI API error: {response.text}"
+            logger.error(error_message)
+            return jsonify({'error': error_message}), response.status_code
+
+        response_data = response.json()
+        logger.info("Successfully created OpenAI session")
+        return jsonify(response_data)
+
+    except Exception as e:
+        error_message = f"Error creating session: {str(e)}"
+        logger.error(error_message)
+        return jsonify({'error': error_message}), 500
