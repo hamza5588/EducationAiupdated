@@ -920,6 +920,7 @@
     font-size: 14px;
 }
 
+<<<<<<< HEAD
 /* Voice Call Button Styling */
 .voice-call-btn {
     width: 100%;
@@ -1097,12 +1098,45 @@
     color: #10a37f;
     font-size: 2em;
     margin: 10px 0;
+=======
+/* Voice Chat Styles */
+.voice-chat-container {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    z-index: 1000;
+}
+
+.ring-box {
+    background: linear-gradient(135deg, #10a37f 0%, #0d8a6a 100%);
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    min-width: 200px;
+}
+
+.call-status {
+    font-size: 16px;
+    margin-bottom: 10px;
+}
+
+.timer {
+    font-size: 24px;
+    margin: 10px 0;
+    font-family: monospace;
+>>>>>>> 2a0bc22 (file are added)
 }
 
 #endCallBtn {
     background: #e74c3c;
     color: white;
     border: none;
+<<<<<<< HEAD
     padding: 10px 20px;
     border-radius: 8px;
     cursor: pointer;
@@ -1118,6 +1152,17 @@
     cursor: pointer;
     font-size: 1.1em;
     margin-top: 20px;
+=======
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    margin-top: 10px;
+}
+
+#endCallBtn:hover {
+    background: #c0392b;
+>>>>>>> 2a0bc22 (file are added)
 }
 
     </style>
@@ -1297,6 +1342,27 @@ let isSpeaking = false;
 let recognition;
 let synthesis;
 
+// Global variables for voice chat
+let peerConnection = null;
+let dataChannel = null;
+let isConnected = false;
+let timerInterval = null;
+let seconds = 0;
+
+// Voice chat container HTML
+const voiceChatHTML = `
+    <div id="voiceChatContainer" class="voice-chat-container" style="display: none;">
+        <div id="ringBox" class="ring-box" style="display: none;">
+            <div class="call-status">Ready to call</div>
+            <div class="timer" style="display: none;">00:00:00</div>
+            <button id="endCallBtn" style="display: none;">End Call</button>
+        </div>
+    </div>
+`;
+
+// Add voice chat container to body
+document.body.insertAdjacentHTML('beforeend', voiceChatHTML);
+
 // Initialize everything when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     initializeSidebar();
@@ -1384,17 +1450,25 @@ function removeFile(fileName) {
 
 // Initialization functions
 function initializeSidebar() {
+    console.log('Initializing sidebar...');  // Debug log
     const sidebar = document.querySelector('.sidebar');
+    
+    // First, clear the existing content
     sidebar.innerHTML = `
         <div class="sidebar-actions">
             <button id="newConversationBtn" class="new-conversation-btn">
                 <i class="fas fa-plus"></i>
                 New Chat
             </button>
+            <button id="voiceChatBtn" class="voice-chat-btn">
+                <i class="fas fa-microphone"></i>
+                Voice Chat
+            </button>
             <button id="settingsBtn" class="settings-btn">
                 <i class="fas fa-cog"></i>
                 Update Api Key
             </button>
+<<<<<<< HEAD
             <button id="voiceCallBtn" class="voice-call-btn">
                 <div class="call-icon-wrapper">
                     <i class="fas fa-phone"></i>
@@ -1404,11 +1478,12 @@ function initializeSidebar() {
             </button>
 
                 <button id="promptAdjustBtn" class="prompt-adjust-btn">
+=======
+            <button id="promptAdjustBtn" class="prompt-adjust-btn">
+>>>>>>> 2a0bc22 (file are added)
                 <i class="fas fa-sliders"></i>
                 Adjust Prompt
             </button>
-
-            
             <button id="logoutBtn" class="logout-btn" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i>
                 Logout
@@ -1416,67 +1491,154 @@ function initializeSidebar() {
         </div>
         <div id="conversationList"></div>
     `;
-}
-function initializePromptModal() {
-    const promptBtn = document.getElementById('promptAdjustBtn');
-    const promptModal = document.getElementById('promptModal');
-    const closePromptBtn = promptModal.querySelector('.close-modal');
-    const updatePromptBtn = document.getElementById('updatePrompt');
-    const promptInput = document.getElementById('promptInput');
 
-    // Load current prompt when opening modal
-    promptBtn.addEventListener('click', async () => {
-        promptModal.style.display = 'block';
-        try {
-            const response = await fetch('/get_prompt');
-            const data = await response.json();
-            promptInput.value = data.prompt;
-        } catch (error) {
-            console.error('Error loading prompt:', error);
-        }
-    });
-
-    // Close modal
-    closePromptBtn.addEventListener('click', () => promptModal.style.display = 'none');
-    window.addEventListener('click', (event) => {
-        if (event.target === promptModal) promptModal.style.display = 'none';
-    });
-
-    // Update prompt
-    updatePromptBtn.addEventListener('click', async () => {
-        const newPrompt = promptInput.value.trim();
-        if (!newPrompt) {
-            alert('Please enter a prompt');
-            return;
+    // Add these styles dynamically to ensure they're applied
+    const styles = document.createElement('style');
+    styles.textContent = `
+        .voice-chat-btn {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #565869;
+            border-radius: 8px;
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
         }
 
-        try {
-            const response = await fetch('/update_prompt', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ prompt: newPrompt })
-            });
-            const data = await response.json();
-            
-            if (data.success) {
-                alert('Prompt updated successfully');
-                promptModal.style.display = 'none';
-            } else {
-                alert(data.error || 'Failed to update prompt');
+        .voice-chat-btn:hover {
+            background: #343541;
+        }
+
+        .voice-chat-btn.active {
+            background: #10a37f;
+            border-color: #10a37f;
+        }
+
+        .voice-chat-btn i {
+            font-size: 16px;
+            width: 20px;
+            text-align: center;
+        }
+    `;
+    document.head.appendChild(styles);
+
+    // Add event listener for voice chat button
+    const voiceChatBtn = document.getElementById('voiceChatBtn');
+    if (voiceChatBtn) {
+        console.log('Voice chat button found, adding event listener...'); // Debug log
+        voiceChatBtn.addEventListener('click', async () => {
+            console.log('Voice chat button clicked'); // Debug log
+            try {
+                if (!isConnected) {
+                    voiceChatBtn.classList.add('active');
+                    showNotification('Connecting to voice chat...', 'info');
+                    await initializeVoiceChat();
+                } else {
+                    endVoiceChat();
+                    voiceChatBtn.classList.remove('active');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                showNotification('Failed to connect to voice chat', 'error');
+                voiceChatBtn.classList.remove('active');
             }
-        } catch (error) {
-            console.error('Error:', error);
-            alert('Error updating prompt');
-        }
-    });
+        });
+    } else {
+        console.error('Voice chat button not found!'); // Debug log
+    }
 }
 
-// Call this in your document ready function
+// Add this notification function if it doesn't exist
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
+
+// Make sure these styles are added to your CSS
+const notificationStyles = `
+    .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 12px 24px;
+        border-radius: 8px;
+        color: white;
+        z-index: 1000;
+        animation: slideIn 0.3s ease-out;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .notification.info {
+        background: #3498db;
+    }
+
+    .notification.error {
+        background: #e74c3c;
+    }
+
+    .notification.success {
+        background: #2ecc71;
+    }
+`;
+
+// Add this to your DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', () => {
-    initializePromptModal();
+    console.log('DOM loaded, initializing components...'); // Debug log
+    
+    // Add notification styles
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = notificationStyles;
+    document.head.appendChild(styleSheet);
+    
+    // Initialize sidebar
+    initializeSidebar();
+    
+    // Initialize other components
+    setupEventListeners();
+    initializeSettings();
 });
+
+// Update the mobile menu toggle to include voice chat button
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (mobileMenuToggle && sidebar) {
+        mobileMenuToggle.addEventListener('click', function() {
+            sidebar.classList.toggle('expanded');
+            const icon = this.querySelector('i');
+            if (sidebar.classList.contains('expanded')) {
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-times');
+            } else {
+                icon.classList.remove('fa-times');
+                icon.classList.add('fa-bars');
+            }
+        });
+    }
+});
+
 function setupEventListeners() {
     const messageInput = document.getElementById('messageInput');
     messageInput.addEventListener('keydown', function(e) {
@@ -1977,6 +2139,7 @@ function autoResizeTextarea(textarea) {
     textarea.style.height = newHeight + 'px';
 }
 
+<<<<<<< HEAD
 // Audio setup
 const beepSound = new Audio('{{ url_for("static", filename="assets/beep.mp3") }}');
 let beepInterval;
@@ -2000,12 +2163,24 @@ async function startCall() {
     startBeeping();
 
     try {
+=======
+// Initialize voice chat
+async function initializeVoiceChat() {
+    try {
+        console.log('Initializing voice chat...');
+        
+        // Request microphone permission first
+        const mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Get session token
+>>>>>>> 2a0bc22 (file are added)
         const tokenResponse = await fetch("/session");
         if (!tokenResponse.ok) {
             throw new Error('Failed to get session token');
         }
         
         const data = await tokenResponse.json();
+<<<<<<< HEAD
         if (data.error) {
             throw new Error(data.error);
         }
@@ -2056,18 +2231,42 @@ async function initializeWebRTC(EPHEMERAL_KEY) {
             } 
         });
 
+=======
+        if (!data.client_secret || !data.client_secret.value) {
+            throw new Error('Invalid session token response');
+        }
+
+        const EPHEMERAL_KEY = data.client_secret.value;
+
+        // Create RTCPeerConnection
+        peerConnection = new RTCPeerConnection({
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' },
+                { urls: 'stun:stun1.l.google.com:19302' }
+            ]
+        });
+
+        // Add local audio track
+>>>>>>> 2a0bc22 (file are added)
         mediaStream.getTracks().forEach(track => {
             peerConnection.addTrack(track, mediaStream);
         });
 
+<<<<<<< HEAD
         const audioElement = document.createElement("audio");
         audioElement.autoplay = true;
         document.body.appendChild(audioElement);
+=======
+        // Setup audio output
+        const audioElement = document.createElement('audio');
+        audioElement.autoplay = true;
+>>>>>>> 2a0bc22 (file are added)
         
         peerConnection.ontrack = event => {
             audioElement.srcObject = event.streams[0];
         };
 
+<<<<<<< HEAD
         const offer = await peerConnection.createOffer({
             offerToReceiveAudio: true,
             offerToReceiveVideo: false
@@ -2098,10 +2297,61 @@ async function initializeWebRTC(EPHEMERAL_KEY) {
 
     } catch (error) {
         console.error("WebRTC setup error:", error);
+=======
+        // Create data channel
+        dataChannel = peerConnection.createDataChannel('chat');
+        setupDataChannel();
+
+        // Create and send offer
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+
+        // Send offer to OpenAI
+        const apiUrl = "https://api.openai.com/v1/realtime";
+        const model = "gpt-4o-realtime-preview-2024-12-17";
+        
+        const sdpResponse = await fetch(`${apiUrl}?model=${model}`, {
+            method: "POST",
+            body: offer.sdp,
+            headers: {
+                Authorization: `Bearer ${EPHEMERAL_KEY}`,
+                "Content-Type": "application/sdp"
+            },
+        });
+
+        if (!sdpResponse.ok) {
+            throw new Error('Failed to establish connection with OpenAI');
+        }
+
+        const answer = {
+            type: "answer",
+            sdp: await sdpResponse.text(),
+        };
+        await peerConnection.setRemoteDescription(answer);
+
+        // Show voice chat UI
+        document.getElementById('voiceChatContainer').style.display = 'block';
+        document.getElementById('ringBox').style.display = 'block';
+        
+        // Update connection state
+        isConnected = true;
+        startTimer();
+        
+        // Update UI
+        document.querySelector('.call-status').textContent = 'Connected';
+        document.querySelector('.timer').style.display = 'block';
+        document.getElementById('endCallBtn').style.display = 'block';
+
+    } catch (error) {
+        console.error('Voice chat initialization error:', error);
+        showNotification(error.message, 'error');
+        endVoiceChat();
+>>>>>>> 2a0bc22 (file are added)
         throw error;
     }
 }
 
+<<<<<<< HEAD
 function handleConnectionStateChange() {
     const callStatus = document.querySelector('.call-status');
     const timer = document.querySelector('.timer');
@@ -2153,6 +2403,64 @@ function endCall() {
     }
     
     isConnected = false;
+=======
+function setupDataChannel() {
+    if (!dataChannel) return;
+
+    dataChannel.onopen = () => {
+        console.log('Data channel opened');
+        configureVoiceChat();
+    };
+
+    dataChannel.onclose = () => {
+        console.log('Data channel closed');
+        if (isConnected) {
+            showNotification('Voice chat disconnected', 'error');
+            endVoiceChat();
+        }
+    };
+
+    dataChannel.onmessage = async (event) => {
+        try {
+            const message = JSON.parse(event.data);
+            console.log('Received message:', message);
+            
+            if (message.type === 'transcript') {
+                addMessage('bot', message.text);
+            }
+        } catch (error) {
+            console.error('Error handling message:', error);
+        }
+    };
+}
+
+function configureVoiceChat() {
+    const config = {
+        type: 'session.update',
+        session: {
+            modalities: ['text', 'audio'],
+            tools: [
+                {
+                    type: 'function',
+                    name: 'changeBackgroundColor',
+                    description: 'Changes the background gradient of the calling interface',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            color1: { type: 'string', description: 'First gradient color' },
+                            color2: { type: 'string', description: 'Second gradient color' }
+                        },
+                        required: ['color1', 'color2']
+                    }
+                }
+            ]
+        }
+    };
+    
+    if (dataChannel.readyState === 'open') {
+        dataChannel.send(JSON.stringify(config));
+    }
+>>>>>>> 2a0bc22 (file are added)
 }
 
 function startTimer() {
@@ -2160,6 +2468,7 @@ function startTimer() {
     timerInterval = setInterval(() => {
         seconds++;
         const timer = document.querySelector('.timer');
+<<<<<<< HEAD
         timer.textContent = formatTime(seconds);
     }, 1000);
 }
@@ -2171,6 +2480,14 @@ function stopTimer() {
     }
 }
 
+=======
+        if (timer) {
+            timer.textContent = formatTime(seconds);
+        }
+    }, 1000);
+}
+
+>>>>>>> 2a0bc22 (file are added)
 function formatTime(seconds) {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -2178,6 +2495,7 @@ function formatTime(seconds) {
     return `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 }
 
+<<<<<<< HEAD
 function formatCallSummary(seconds) {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -2209,6 +2527,37 @@ document.addEventListener('DOMContentLoaded', function() {
     callButton.addEventListener('click', startCall);
     endCallBtn.addEventListener('click', endCall);
 });
+=======
+function endVoiceChat() {
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+    }
+    
+    if (dataChannel) {
+        dataChannel.close();
+        dataChannel = null;
+    }
+    
+    isConnected = false;
+    
+    // Update UI
+    const voiceChatContainer = document.getElementById('voiceChatContainer');
+    const ringBox = document.getElementById('ringBox');
+    const voiceChatBtn = document.getElementById('voiceChatBtn');
+    
+    if (voiceChatContainer) voiceChatContainer.style.display = 'none';
+    if (ringBox) ringBox.style.display = 'none';
+    if (voiceChatBtn) voiceChatBtn.classList.remove('active');
+    
+    showNotification('Voice chat ended', 'info');
+}
+>>>>>>> 2a0bc22 (file are added)
     </script>
 </body>
 </html>
